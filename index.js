@@ -40,7 +40,11 @@ function transformCookie (str) {
   
   const page = await browser.newPage()
   await page.setCookie(...arrCookie)
-  await page.goto(targetUrl)
+  const pageRes = await page.goto(targetUrl)
+  const chain = pageRes.request().redirectChain()
+  if (chain.length) {
+    console.log('\x1b[31m 有可能发生302跳转，可能登录过期')
+  }
   // console.log(page.cookies('https://ticket.urbtix.hk'))
   console.log(page.url())
   await page.$$eval('#ticket-price-tbl tr', (el, config) => {
@@ -63,14 +67,14 @@ function transformCookie (str) {
       throw new Error('不能连坐');
     }
   }).catch(() => {})
-  console.log('\x1b[32m', '正在检查位置，准备跳转锁票页')
+  console.log('\x1b[32m', '正在检查位置，准备跳转锁票页', '\x1b[0m')
   await checkNavigate('expressPurchase', page).catch((err) => {throw new Error('去不到锁票页')})
   await page.evaluate(() => {
     $('#checkbox-not-adjacent').click()
     $('.ticket-review-confirm-btn > div.btn-outer-blk').click()
   })
   await checkNavigate('shoppingCart', page).catch((err) => {throw new Error('跳转购物篮页失败，尝试自行访问 https://ticket.urbtix.hk/internet/zh_TW/secure/shoppingCart')})
-  console.log('\x1b[32m', '锁票成功')
+  console.log('\x1b[32m', '锁票成功', '\x1b[0m')
   const cartClick = page.$eval('#checkout-btn', el => {
     if (el) {
       el.click()
